@@ -1,0 +1,92 @@
+/* ============================================================
+   SIPSCAPES — GLOBAL DESIGN TOKENS
+   Preserved exactly from the original HTML/CSS prototype.
+   Do not redefine these locally in component modules —
+   import this file once in main.jsx and reference the vars.
+   ============================================================ */
+:root {
+  --paper: #f1e4cc;
+  --paper-deep: #e4d3ae;
+  --paper-torn: #faf3e2;
+  --card: #fbf5e7;
+  --card-shadow: rgba(38, 24, 14, 0.22);
+  --espresso: #2a1b12;
+  --coffee: #6e4526;
+  --coffee-mid: #92613a;
+  --coffee-light: #c6a379;
+  --rust: #9c4a2e;
+  --rust-deep: #7e3a22;
+  --gold: #b0842e;
+  --sage: #707f5c;
+  --ink: #33241a;
+  --ink-soft: #5a4433;
+  --line: rgba(42, 27, 18, 0.14);
+  --grain-opacity: 0.05;
+
+  --display: 'Fraunces', serif;
+  --body-font: 'Work Sans', sans-serif;
+  --hand: 'Caveat', cursive;
+
+  --radius-card: 3px 14px 4px 14px;
+  --radius-soft: 18px;
+  --ease-soft: cubic-bezier(0.22, 0.68, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.night {
+  --paper: #1b1410;
+  --paper-deep: #221a14;
+  --paper-torn: #241c16;
+  --card: #261d16;
+  --card-shadow: rgba(0, 0, 0, 0.5);
+  --ink: #ede0c8;
+  --ink-soft: #c9b896;
+  --line: rgba(237, 224, 200, 0.12);
+  --coffee-light: #4a3626;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--body-font);
+  background: radial-gradient(ellipse at 20% -10%, #4a3527 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 110%, #241a12 0%, transparent 55%), #1c140d;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Reduced motion support (accessibility requirement) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible keyboard focus states everywhere (accessibility requirement) */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2.5px solid var(--rust);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button {
+  font-family: inherit;
+}

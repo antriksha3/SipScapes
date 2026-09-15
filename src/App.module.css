@@ -1,0 +1,130 @@
+.appRoot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 40px 16px;
+}
+
+/* subtle wood-desk texture behind the phone, desktop/tablet only */
+.appRoot::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.015) 0px,
+    transparent 2px,
+    transparent 40px,
+    rgba(255, 255, 255, 0.015) 42px
+  );
+  pointer-events: none;
+}
+
+.device {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  border-radius: 52px;
+  background: var(--espresso);
+  padding: 14px;
+  box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 0.7), 0 20px 40px -15px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.notch {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 28px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 100;
+}
+
+.screenFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 38px;
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: var(--grain-opacity);
+}
+
+:global(body.night) .grain {
+  mix-blend-mode: overlay;
+  opacity: 0.08;
+}
+
+.screenStack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Each routed page renders inside this scrollable, textured container */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  background: var(--paper);
+}
+
+.screen::-webkit-scrollbar {
+  display: none;
+}
+
+.screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
+  opacity: 0.05;
+  z-index: 1;
+}
+
+:global(body.night) .screen::after {
+  mix-blend-mode: screen;
+  opacity: 0.04;
+}
+
+/* ============================================================
+   Responsiveness: tablet & desktop keep the phone-frame identity
+   (per brief: "maintain the phone mockup version... without
+   changing the visual identity"), just scaled and re-centered.
+   ============================================================ */
+@media (max-width: 460px) {
+  .device {
+    width: 100%;
+    max-width: 390px;
+    height: min(844px, 88vh);
+  }
+}
+
+@media (min-width: 900px) {
+  .appRoot {
+    padding: 64px 24px;
+  }
+  .device {
+    transform: scale(1.05);
+  }
+}
