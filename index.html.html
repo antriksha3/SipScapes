@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SipScapes — a coffee journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Work+Sans:wght@300;400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SIPSCAPES — DESIGN TOKENS
+   ============================================================ */
+:root{
+  --paper: #F1E4CC;
+  --paper-deep: #E4D3AE;
+  --paper-torn: #FAF3E2;
+  --card: #FBF5E7;
+  --card-shadow: rgba(38, 24, 14, 0.22);
+  --espresso: #2A1B12;
+  --coffee: #6E4526;
+  --coffee-mid: #92613A;
+  --coffee-light: #C6A379;
+  --rust: #9C4A2E;
+  --rust-deep: #7E3A22;
+  --gold: #B0842E;
+  --sage: #707F5C;
+  --ink: #33241A;
+  --ink-soft: #5A4433;
+  --line: rgba(42,27,18,0.14);
+  --grain-opacity: 0.05;
+
+  --display: 'Fraunces', serif;
+  --body: 'Work Sans', sans-serif;
+  --hand: 'Caveat', cursive;
+
+  --radius-card: 3px 14px 4px 14px;
+  --radius-soft: 18px;
+  --ease-soft: cubic-bezier(.22,.68,0,1);
+  --ease-out: cubic-bezier(.16,1,.3,1);
+}
+body.night{
+  --paper: #1B1410;
+  --paper-deep: #221A14;
+  --paper-torn: #241C16;
+  --card: #261D16;
+  --card-shadow: rgba(0,0,0,0.5);
+  --ink: #EDE0C8;
+  --ink-soft: #C9B896;
+  --line: rgba(237,224,200,0.12);
+  --coffee-light: #4A3626;
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--body);
+  background:
+    radial-gradient(ellipse at 20% -10%, #4a3527 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 110%, #241a12 0%, transparent 55%),
+    #1c140d;
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  padding:40px 16px;
+  overflow-x:hidden;
+}
+
+/* subtle wood-desk texture behind the phone */
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background-image: repeating-linear-gradient(100deg, rgba(255,255,255,0.015) 0px, transparent 2px, transparent 40px, rgba(255,255,255,0.015) 42px);
+  pointer-events:none;
+}
+
+/* ============================================================
+   DEVICE FRAME
+   ============================================================ */
+.device{
+  position:relative;
+  width:390px; height:844px;
+  border-radius:52px;
+  background:var(--espresso);
+  padding:14px;
+  box-shadow:
+    0 60px 120px -30px rgba(0,0,0,0.7),
+    0 20px 40px -15px rgba(0,0,0,0.5),
+    inset 0 0 0 2px rgba(255,255,255,0.04);
+  flex-shrink:0;
+}
+.screen-frame{
+  position:relative;
+  width:100%; height:100%;
+  border-radius:38px;
+  overflow:hidden;
+  background:var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.3);
+}
+.notch{
+  position:absolute; top:16px; left:50%; transform:translateX(-50%);
+  width:120px; height:28px; background:#000; border-radius:20px;
+  z-index:100;
+}
+
+/* grain overlay for whole device */
+.grain{
+  position:absolute; inset:0; z-index:90; pointer-events:none;
+  mix-blend-mode:multiply; opacity:var(--grain-opacity);
+}
+body.night .grain{ mix-blend-mode:overlay; opacity:0.08;}
+
+/* ============================================================
+   SCREEN STACK
+   ============================================================ */
+.screen-stack{
+  position:relative; width:100%; height:100%;
+}
+.screen{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  opacity:0; visibility:hidden;
+  transform: scale(0.97);
+  transition: opacity .45s var(--ease-out), transform .45s var(--ease-out);
+  overflow-y:auto; overflow-x:hidden;
+  -ms-overflow-style:none; scrollbar-width:none;
+  background:var(--paper);
+}
+.screen::-webkit-scrollbar{display:none;}
+.screen.active{ opacity:1; visibility:visible; transform:scale(1); z-index:5;}
+
+/* paper grain per-screen (svg noise) */
+.screen::after{
+  content:'';
+  position:absolute; inset:0; pointer-events:none;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply; opacity:0.05; z-index:1;
+}
+body.night .screen::after{ mix-blend-mode:screen; opacity:0.04;}
+
+/* coffee-ring transition wipe */
+.ripple{
+  position:absolute; inset:0; z-index:80; pointer-events:none;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0;
+}
+.ripple.firing{ opacity:1; }
+.ripple svg{ width:60px; height:60px; }
+.ripple-ring{
+  fill:none; stroke:var(--rust); stroke-width:2;
+  transform-origin:center;
+  transform: scale(0);
+  opacity:0;
+}
+.ripple.firing .ripple-ring{ animation: ringOut .6s var(--ease-out) forwards; }
+.ripple.firing .ripple-ring:nth-child(2){ animation-delay:.08s; stroke:var(--gold);}
+.ripple.firing .ripple-ring:nth-child(3){ animation-delay:.16s; stroke:var(--coffee);}
+@keyframes ringOut{
+  0%{ transform:scale(0.2); opacity:0;}
+  30%{ opacity:.55;}
+  100%{ transform:scale(22); opacity:0;}
+}
+
+/* ============================================================
+   SHARED UI ATOMS
+   ============================================================ */
+.status-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:18px 26px 4px; font-size:13px; font-weight:600; color:var(--ink);
+  letter-spacing:.02em;
+}
+.eyebrow{
+  font-family:var(--body); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--rust); font-weight:600;
+}
+h1.display, h2.display, h3.display{
+  font-family:var(--display); color:var(--ink); margin:0; font-weight:600;
+  letter-spacing:-.01em;
+}
+.script{ font-family:var(--hand); color:var(--rust-deep); font-weight:600; }
+body.night .script{ color:var(--gold); }
+
+.btn{
+  font-family:var(--body); font-weight:600; font-size:14.5px;
+  border:none; border-radius:100px; padding:15px 26px;
+  cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+  transition: transform .25s var(--ease-soft), box-shadow .25s;
+}
+.btn:active{ transform:scale(0.96); }
+.btn-primary{
+  background: linear-gradient(160deg, var(--rust), var(--rust-deep));
+  color:#F9ECDD;
+  box-shadow: 0 10px 22px -8px rgba(156,74,46,0.55);
+}
+.btn-ghost{
+  background:transparent; color:var(--ink); border:1.5px solid var(--line);
+}
+.btn-block{ width:100%; justify-content:center; }
+
+/* washi tape */
+.washi{
+  position:absolute; width:64px; height:22px; opacity:.85;
+  background: repeating-linear-gradient(45deg, var(--wc,#C6A379), var(--wc,#C6A379) 6px, rgba(255,255,255,0.35) 6px, rgba(255,255,255,0.35) 12px);
+  box-shadow:0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* polaroid */
+.polaroid{
+  background:#fff; padding:10px 10px 34px; border-radius:2px;
+  box-shadow: 0 10px 18px -6px var(--card-shadow), 0 2px 4px rgba(0,0,0,0.12);
+  display:inline-block;
+}
+.polaroid img, .polaroid .photo{
+  display:block; width:100%; border-radius:1px;
+}
+.polaroid figcaption{
+  font-family:var(--hand); font-size:15px; color:#3a2c1f; text-align:center; margin-top:8px;
+}
+
+/* coffee ring stamp */
+.ring-stamp{
+  width:46px; height:46px; border-radius:50%;
+  border:2.5px solid var(--coffee-light);
+  opacity:.55; flex-shrink:0;
+}
+
+/* bottom nav */
+.tabbar{
+  position:absolute; bottom:0; left:0; right:0; z-index:60;
+  background:var(--card);
+  border-top:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-around;
+  padding:10px 10px 26px;
+  box-shadow: 0 -8px 24px -12px var(--card-shadow);
+}
+.tab{
+  background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:4px;
+  color:var(--ink-soft); font-family:var(--body); font-size:10px; font-weight:600;
+  opacity:.55; cursor:pointer; padding:6px 10px;
+  transition: opacity .2s, transform .2s;
+}
+.tab.active{ opacity:1; color:var(--rust); }
+.tab svg{ width:22px; height:22px; }
+.tab-create{
+  width:52px; height:52px; border-radius:50%;
+  background: radial-gradient(circle at 35% 30%, var(--coffee-mid), var(--rust-deep));
+  color:#F9ECDD; margin-top:-26px;
+  box-shadow: 0 10px 20px -6px rgba(156,74,46,0.6), 0 0 0 5px var(--card);
+  opacity:1;
+}
+.tab-create svg{ width:22px; height:22px; }
+.tab-create:active{ transform:scale(0.9); }
+
+/* chip */
+.chip{
+  font-family:var(--body); font-size:12.5px; font-weight:600; color:var(--ink-soft);
+  background:var(--paper-deep); border:1px solid var(--line); border-radius:100px;
+  padding:7px 14px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+.chip.selected{ background:var(--rust); color:#fbf3e6; border-color:var(--rust);}
+
+/* section title */
+.sec-title{
+  display:flex; align-items:baseline; justify-content:space-between;
+  padding:0 26px; margin:26px 0 14px;
+}
+.sec-title .see-all{ font-size:12px; font-weight:600; color:var(--rust); }
+
+/* steam */
+.steam{ position:absolute; }
+.steam span{
+  position:absolute; bottom:0; width:5px; height:24px; border-radius:3px;
+  background:linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,.55));
+  animation: rise 3.2s ease-in-out infinite;
+  filter:blur(1.5px);
+}
+.steam span:nth-child(1){ left:0; animation-delay:0s;}
+.steam span:nth-child(2){ left:9px; animation-delay:.6s; height:20px;}
+.steam span:nth-child(3){ left:18px; animation-delay:1.2s;}
+@keyframes rise{
+  0%{ transform:translateY(0) scaleX(1); opacity:0;}
+  20%{ opacity:.7;}
+  100%{ transform:translateY(-38px) scaleX(1.6); opacity:0;}
+}
+
+/* fade-up entrance for children, staggered via JS adding .in */
+.fade-up{ opacity:0; transform:translateY(14px); transition:opacity .6s var(--ease-out), transform .6s var(--ease-out);}
+.fade-up.in{ opacity:1; transform:translateY(0);}
+
+/* torn edge divider */
+.torn{
+  height:14px; width:100%;
+  background: var(--paper);
+  clip-path: polygon(0% 100%,3% 30%,6% 90%,9% 20%,12% 80%,15% 10%,18% 70%,21% 25%,24% 95%,27% 15%,30% 75%,33% 30%,36% 90%,39% 10%,42% 65%,45% 20%,48% 85%,51% 30%,54% 70%,57% 15%,60% 90%,63% 25%,66% 80%,69% 10%,72% 70%,75% 30%,78% 95%,81% 15%,84% 75%,87% 25%,90% 85%,93% 10%,96% 70%,100% 100%);
+}
+
+/* ============================================================
+   1. SPLASH
+   ============================================================ */
+#screen-splash{
+  align-items:center; justify-content:center;
+  background: radial-gradient(circle at 50% 38%, #3a2a1c 0%, var(--espresso) 70%);
+}
+.splash-mark{ position:relative; display:flex; flex-direction:column; align-items:center; }
+.cup-mark{ width:88px; height:88px; position:relative; }
+.splash-title{
+  font-family:var(--display); font-style:italic; font-weight:500;
+  font-size:34px; color:#F3E6CE; margin-top:18px; letter-spacing:.01em;
+}
+.splash-sub{
+  font-family:var(--hand); color:var(--coffee-light); font-size:18px; margin-top:6px;
+}
+.splash-loader{
+  width:120px; height:2px; background:rgba(255,255,255,0.12); margin-top:34px; border-radius:2px; overflow:hidden;
+}
+.splash-loader span{ display:block; height:100%; width:40%; background:var(--rust); animation:load 1.6s ease-in-out infinite; }
+@keyframes load{ 0%{transform:translateX(-100%);} 100%{transform:translateX(350%);} }
+
+/* ============================================================
+   2. ONBOARDING
+   ============================================================ */
+#screen-onboard{ justify-content:space-between; }
+.ob-visual{
+  height:400px; position:relative; margin:20px 26px 0; border-radius:22px; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+}
+.ob-slide{ position:absolute; inset:0; opacity:0; transition:opacity .5s ease; display:flex; align-items:center; justify-content:center; flex-direction:column; padding:20px;}
+.ob-slide.active{ opacity:1; }
+.ob-content{ padding:8px 30px 0; text-align:center; }
+.ob-content h2{ font-size:25px; line-height:1.25; margin-bottom:8px;}
+.ob-content p{ color:var(--ink-soft); font-size:14.5px; line-height:1.55; margin:0;}
+.ob-dots{ display:flex; gap:7px; justify-content:center; margin:20px 0; }
+.ob-dots span{ width:6px; height:6px; border-radius:50%; background:var(--line); transition:.3s;}
+.ob-dots span.active{ width:20px; border-radius:4px; background:var(--rust);}
+.ob-actions{ display:flex; gap:10px; padding:0 26px 22px; }
+
+/* ============================================================
+   3. HOME
+   ============================================================ */
+.home-header{ padding:8px 26px 0; display:flex; justify-content:space-between; align-items:flex-start;}
+.greet-hand{ font-family:var(--hand); font-size:26px; color:var(--rust-deep); line-height:1;}
+body.night .greet-hand{ color:var(--gold);}
+.greet-sub{ font-size:13px; color:var(--ink-soft); margin-top:4px;}
+.avatar-ring{
+  width:44px; height:44px; border-radius:50%; border:2px solid var(--rust);
+  padding:2px; flex-shrink:0;
+}
+.avatar-ring .inner{ width:100%; height:100%; border-radius:50%; background:linear-gradient(160deg,#caa27a,#6e4526); }
+
+.today-card{
+  margin:20px 26px 0; padding:22px; border-radius:var(--radius-card);
+  background: linear-gradient(155deg, var(--card), var(--paper-deep));
+  box-shadow: 0 14px 30px -14px var(--card-shadow), inset 0 0 0 1px var(--line);
+  position:relative; overflow:hidden;
+}
+.today-card .steam{ top:-6px; left:26px; }
+.today-card .eyebrow{ margin-bottom:6px; }
+.today-card h3{ font-size:21px; margin-bottom:4px; }
+.today-card p{ font-size:13px; color:var(--ink-soft); margin:0 0 14px; line-height:1.5; }
+.mood-row{ display:flex; gap:10px; }
+.mood-btn{
+  width:40px; height:40px; border-radius:50%; border:1.5px solid var(--line);
+  background:var(--paper); display:flex; align-items:center; justify-content:center;
+  font-size:18px; cursor:pointer; transition:.25s var(--ease-soft);
+}
+.mood-btn.picked{ background:var(--rust); border-color:var(--rust); transform:scale(1.12) rotate(-6deg); }
+
+.strip-row{ display:flex; gap:14px; padding:0 26px 8px; overflow-x:auto; scrollbar-width:none; }
+.strip-row::-webkit-scrollbar{display:none;}
+.mini-polaroid{ width:118px; flex-shrink:0; transform:rotate(var(--r,0deg)); }
+.mini-polaroid .photo{ height:118px; }
+.mini-polaroid figcaption{ font-size:13px; }
+
+.streak-card{
+  margin:22px 26px 30px; padding:18px 20px; border-radius:16px;
+  background:var(--espresso); color:#F3E6CE; display:flex; align-items:center; gap:14px;
+  box-shadow:0 14px 24px -14px rgba(0,0,0,0.5);
+}
+.streak-num{ font-family:var(--display); font-size:30px; font-weight:600; }
+.streak-txt{ font-size:12px; color:var(--coffee-light); line-height:1.4; }
+
+/* ============================================================
+   4. TIMELINE / SCRAPBOOK
+   ============================================================ */
+.tl-date{
+  display:flex; align-items:center; gap:10px; padding:0 26px; margin:22px 0 14px;
+}
+.tl-date .line{ flex:1; height:1px; background:var(--line); }
+.tl-date span{ font-family:var(--hand); font-size:18px; color:var(--ink-soft); }
+
+.scrap-card{
+  margin:0 22px 26px; padding:20px; background:var(--card); border-radius:4px 16px 4px 16px;
+  box-shadow:0 12px 26px -14px var(--card-shadow), inset 0 0 0 1px var(--line);
+  position:relative;
+}
+.scrap-card .washi{ top:-10px; left:24px; transform:rotate(-4deg); }
+.scrap-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.scrap-head .ring-stamp{ width:34px; height:34px; }
+.scrap-head b{ font-family:var(--display); font-size:15px; color:var(--ink); display:block; }
+.scrap-head span{ font-size:11.5px; color:var(--ink-soft); }
+.scrap-body-text{ font-family:var(--hand); font-size:18px; color:var(--ink-soft); line-height:1.4; }
+.scrap-photos{ display:flex; gap:10px; margin-top:14px; }
+.scrap-photos .polaroid{ flex:1; transform:rotate(var(--r,0deg)); }
+.scrap-photos .photo{ height:110px; }
+.tag-row{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+
+/* ============================================================
+   5. MEMORY DETAIL
+   ============================================================ */
+.detail-hero{ position:relative; padding:60px 26px 10px; text-align:center; }
+.detail-hero .polaroid{ transform:rotate(-3deg); width:230px; margin:0 auto; }
+.detail-hero .photo{ height:230px; }
+.back-btn{
+  position:absolute; top:18px; left:18px; z-index:20; width:38px; height:38px; border-radius:50%;
+  background:var(--card); display:flex; align-items:center; justify-content:center; border:1px solid var(--line);
+  cursor:pointer; box-shadow:0 6px 14px -8px var(--card-shadow);
+}
+.detail-title{ text-align:center; padding:22px 30px 6px; }
+.detail-meta{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:6px 26px 20px;}
+.detail-block{ margin:0 26px 20px; padding:18px 20px; background:var(--card); border-radius:14px; box-shadow:inset 0 0 0 1px var(--line); }
+.detail-block h4{ font-family:var(--body); font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--rust); margin:0 0 10px;}
+.detail-block .hand-note{ font-family:var(--hand); font-size:19px; line-height:1.45; color:var(--ink-soft); }
+.brew-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.brew-item{ font-size:12.5px; }
+.brew-item b{ display:block; font-family:var(--display); font-size:15px; color:var(--ink); }
+.brew-item span{ color:var(--ink-soft); }
+.playlist-row{ display:flex; align-items:center; gap:12px; }
+.playlist-art{ width:48px; height:48px; border-radius:8px; background:linear-gradient(150deg,#c6a379,#6e4526); flex-shrink:0; }
+.playlist-row b{ display:block; font-size:13.5px; color:var(--ink); }
+.playlist-row span{ font-size:12px; color:var(--ink-soft); }
+
+/* ============================================================
+   6. CREATE MEMORY
+   ============================================================ */
+.create-header{ padding:18px 26px 4px; display:flex; align-items:center; justify-content:space-between; }
+.capture-zone{
+  margin:14px 26px; height:230px; border-radius:16px;
+  background: repeating-linear-gradient(45deg, var(--paper-deep), var(--paper-deep) 10px, var(--card) 10px, var(--card) 20px);
+  border:2px dashed var(--line);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  color:var(--ink-soft); font-size:13px; cursor:pointer;
+}
+.capture-zone svg{ width:34px; height:34px; opacity:.7; }
+.attach-row{ display:flex; gap:10px; padding:6px 26px; overflow-x:auto; scrollbar-width:none;}
+.attach-row::-webkit-scrollbar{display:none;}
+.attach-chip{
+  flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:6px;
+  width:66px; padding:12px 6px; border-radius:14px; background:var(--card); border:1px solid var(--line);
+  font-size:10.5px; color:var(--ink-soft); font-weight:600; cursor:pointer;
+}
+.attach-chip svg{ width:19px; height:19px; color:var(--rust); }
+.field-block{ margin:18px 26px 0; }
+.field-block label{ font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--rust); font-weight:700; }
+.field-input{
+  margin-top:8px; width:100%; border:none; border-bottom:1.5px solid var(--line); background:transparent;
+  font-family:var(--hand); font-size:19px; color:var(--ink); padding:6px 2px; outline:none;
+}
+.field-input::placeholder{ color:var(--ink-soft); opacity:.6; font-family:var(--body); font-size:14px;}
+
+/* ============================================================
+   7. MOOD SELECTION
+   ============================================================ */
+.mood-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:10px 26px; }
+.mood-tile{
+  aspect-ratio:1; border-radius:18px; background:var(--card); border:1.5px solid var(--line);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  font-size:11.5px; font-weight:600; color:var(--ink-soft); cursor:pointer;
+  transition: transform .25s var(--ease-soft), background .25s, border-color .25s;
+}
+.mood-tile .em{ font-size:28px; }
+.mood-tile.picked{ background:var(--rust); border-color:var(--rust); color:#fbf3e6; transform:rotate(-3deg) scale(1.04); }
+
+/* ============================================================
+   8. PROFILE
+   ============================================================ */
+.profile-head{ text-align:center; padding:30px 26px 6px; }
+.profile-photo{ width:88px; height:88px; border-radius:50%; margin:0 auto 12px; padding:4px; border:2.5px solid var(--rust); }
+.profile-photo .inner{ width:100%; height:100%; border-radius:50%; background:linear-gradient(160deg,#caa27a,#6e4526); }
+.stat-row{ display:flex; justify-content:center; gap:30px; padding:20px 26px; }
+.stat-item{ text-align:center; }
+.stat-item b{ display:block; font-family:var(--display); font-size:22px; color:var(--ink); }
+.stat-item span{ font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.08em; }
+.shelf-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:6px 26px; }
+.badge{
+  aspect-ratio:1; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 35% 30%, var(--coffee-light), var(--coffee));
+  color:#fff; font-size:20px; box-shadow:0 8px 16px -8px var(--card-shadow);
+}
+.badge.locked{ background:var(--paper-deep); color:var(--line); opacity:.6; }
+
+/* ============================================================
+   9. STATISTICS
+   ============================================================ */
+.chart-card{ margin:18px 26px; padding:20px; border-radius:16px; background:var(--card); box-shadow:inset 0 0 0 1px var(--line); }
+.bars{ display:flex; align-items:flex-end; gap:10px; height:130px; margin-top:14px; }
+.bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; justify-content:flex-end; height:100%;}
+.bar{ width:100%; border-radius:6px 6px 2px 2px; background:linear-gradient(180deg, var(--coffee-mid), var(--rust)); transform-origin:bottom; transform:scaleY(0); transition:transform 1s var(--ease-out); }
+.bar-col span{ font-size:10px; color:var(--ink-soft); }
+.origin-row{ display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.origin-row:last-child{ border:none; }
+.origin-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.origin-row b{ font-size:13px; flex:1; color:var(--ink); }
+.origin-row span{ font-size:12px; color:var(--ink-soft); }
+
+/* ============================================================
+   10. SETTINGS
+   ============================================================ */
+.settings-group{ margin:18px 26px; }
+.settings-group h4{ font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--rust); margin:0 0 10px; padding-left:4px;}
+.settings-row{
+  display:flex; align-items:center; justify-content:space-between; padding:15px 16px;
+  background:var(--card); margin-bottom:2px; font-size:14px; color:var(--ink);
+}
+.settings-row:first-child{ border-radius:14px 14px 0 0; }
+.settings-row:last-child{ border-radius:0 0 14px 14px; margin-bottom:0;}
+.toggle{ width:44px; height:26px; border-radius:20px; background:var(--line); position:relative; cursor:pointer; transition:.3s; flex-shrink:0;}
+.toggle::after{ content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:.3s var(--ease-soft); box-shadow:0 2px 4px rgba(0,0,0,0.25);}
+.toggle.on{ background:var(--rust); }
+.toggle.on::after{ transform:translateX(18px); }
+
+.pad-bottom{ height:110px; flex-shrink:0; }
+.header-simple{ padding:22px 26px 6px; }
+.header-simple .eyebrow{ display:block; margin-bottom:4px;}
+
+@media (max-width:420px){
+  .device{ width:100%; max-width:390px; height:min(844px,88vh); }
+}
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="notch"></div>
+  <div class="screen-frame">
+    <svg class="grain" width="100%" height="100%"><filter id="g"><feTurbulence baseFrequency="0.85" numOctaves="2"/></filter><rect width="100%" height="100%" filter="url(#g)"/></svg>
+
+    <div class="ripple" id="ripple">
+      <svg viewBox="0 0 100 100"><circle class="ripple-ring" cx="50" cy="50" r="46"/><circle class="ripple-ring" cx="50" cy="50" r="46"/><circle class="ripple-ring" cx="50" cy="50" r="46"/></svg>
+    </div>
+
+    <div class="screen-stack">
+
+      <!-- 1 SPLASH -->
+      <section class="screen active" id="screen-splash">
+        <div class="splash-mark">
+          <svg class="cup-mark" viewBox="0 0 100 100" fill="none">
+            <path d="M22 40h48v22c0 14-10.7 26-24 26s-24-12-24-26V40z" fill="#F3E6CE"/>
+            <path d="M70 44h6c6 0 10 4.4 10 10s-4 10-10 10h-6" stroke="#F3E6CE" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <path d="M30 40c-2-6 3-8 2-14M46 40c-2-6 3-8 2-14M62 40c-2-6 3-8 2-14" stroke="#B0842E" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="splash-title">SipScapes</div>
+          <div class="splash-sub">every cup, a small memory</div>
+          <div class="splash-loader"><span></span></div>
+        </div>
+      </section>
+
+      <!-- 2 ONBOARDING -->
+      <section class="screen" id="screen-onboard">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="ob-visual">
+          <div class="ob-slide active" data-i="0">
+            <svg width="180" height="180" viewBox="0 0 180 180"><rect x="20" y="20" width="140" height="140" rx="4" fill="#FBF5E7" stroke="#E4D3AE" stroke-width="2"/><circle cx="90" cy="80" r="34" fill="none" stroke="#9C4A2E" stroke-width="3" opacity=".55"/><text x="90" y="130" text-anchor="middle" font-family="Caveat" font-size="20" fill="#5A4433">rainy tuesday ☕</text></svg>
+          </div>
+          <div class="ob-slide" data-i="1">
+            <svg width="180" height="180" viewBox="0 0 180 180"><rect x="30" y="16" width="90" height="110" rx="2" fill="#fff" stroke="#e5e5e5"/><rect x="38" y="24" width="74" height="74" fill="#C6A379"/><path d="M40 120c40-30 70 0 100-10" stroke="#9C4A2E" stroke-width="2" fill="none" stroke-dasharray="3 4"/></svg>
+          </div>
+          <div class="ob-slide" data-i="2">
+            <svg width="180" height="180" viewBox="0 0 180 180"><path d="M40 140 L90 40 L140 140Z" fill="none" stroke="#B0842E" stroke-width="2"/><circle cx="90" cy="90" r="6" fill="#9C4A2E"/><circle cx="65" cy="120" r="4" fill="#707F5C"/><circle cx="115" cy="115" r="4" fill="#707F5C"/></svg>
+          </div>
+        </div>
+        <div class="ob-content">
+          <h2 class="display" id="ob-h">A journal, not a log</h2>
+          <p id="ob-p">SipScapes isn't for tracking caffeine. It's for keeping the small, quiet moments that happen around a cup.</p>
+        </div>
+        <div class="ob-dots"><span class="active"></span><span></span><span></span></div>
+        <div class="ob-actions">
+          <button class="btn btn-ghost btn-block" onclick="skipOnboard()">Skip</button>
+          <button class="btn btn-primary btn-block" onclick="nextOnboard()">Continue</button>
+        </div>
+      </section>
+
+      <!-- 3 HOME -->
+      <section class="screen" id="screen-home">
+        <div class="status-row"><span>9:41</span><span>☕ 4</span></div>
+        <div class="home-header">
+          <div>
+            <div class="greet-hand">Good morning, Wren</div>
+            <div class="greet-sub">Thursday · a little grey outside</div>
+          </div>
+          <div class="avatar-ring" onclick="showScreen('profile')"><div class="inner"></div></div>
+        </div>
+
+        <div class="today-card fade-up">
+          <div class="steam"><span></span><span></span><span></span></div>
+          <div class="eyebrow">Today's sip</div>
+          <h3 class="display">What are you drinking right now?</h3>
+          <p>Log the cup in front of you before the moment slips away.</p>
+          <div class="mood-row" id="home-moods">
+            <button class="mood-btn" data-m="🌧️" onclick="pickMood(this)">🌧️</button>
+            <button class="mood-btn" data-m="📖" onclick="pickMood(this)">📖</button>
+            <button class="mood-btn" data-m="🎧" onclick="pickMood(this)">🎧</button>
+            <button class="mood-btn" data-m="🐾" onclick="pickMood(this)">🐾</button>
+            <button class="mood-btn" data-m="✍️" onclick="pickMood(this)">✍️</button>
+          </div>
+        </div>
+
+        <div class="sec-title fade-up"><h3 class="display" style="font-size:17px">Recent pages</h3><span class="see-all" onclick="showScreen('timeline')">see all</span></div>
+        <div class="strip-row fade-up">
+          <figure class="polaroid mini-polaroid" style="--r:-4deg" onclick="showScreen('detail')"><div class="photo" style="background:linear-gradient(150deg,#c6a379,#8a5a34)"></div><figcaption>rainy window</figcaption></figure>
+          <figure class="polaroid mini-polaroid" style="--r:3deg" onclick="showScreen('detail')"><div class="photo" style="background:linear-gradient(150deg,#d9c39a,#6e4526)"></div><figcaption>the corner seat</figcaption></figure>
+          <figure class="polaroid mini-polaroid" style="--r:-2deg" onclick="showScreen('detail')"><div class="photo" style="background:linear-gradient(150deg,#b98a2e,#3a2a1c)"></div><figcaption>slow sunday</figcaption></figure>
+        </div>
+
+        <div class="streak-card fade-up">
+          <div class="streak-num">12</div>
+          <div class="streak-txt">day journaling streak.<br>your longest yet was 19 — keep the pages turning.</div>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 4 TIMELINE -->
+      <section class="screen" id="screen-timeline">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="header-simple">
+          <span class="eyebrow">The scrapbook</span>
+          <h1 class="display" style="font-size:26px">Your timeline</h1>
+        </div>
+
+        <div class="tl-date"><div class="line"></div><span>today</span><div class="line"></div></div>
+        <div class="scrap-card fade-up" onclick="showScreen('detail')">
+          <div class="washi" style="--wc:#9C4A2E"></div>
+          <div class="scrap-head"><div class="ring-stamp"></div><div><b>Ethiopia Yirgacheffe</b><span>pour over · 9:14am</span></div></div>
+          <div class="scrap-body-text">"steam fogging the window, book finally finished."</div>
+          <div class="scrap-photos"><div class="polaroid" style="--r:-3deg"><div class="photo" style="height:90px;background:linear-gradient(150deg,#c6a379,#6e4526)"></div></div><div class="polaroid" style="--r:2deg"><div class="photo" style="height:90px;background:linear-gradient(150deg,#efe0c4,#9c6b41)"></div></div></div>
+          <div class="tag-row"><span class="chip">☕ pour over</span><span class="chip">📖 finished a book</span></div>
+        </div>
+
+        <div class="tl-date"><div class="line"></div><span>yesterday</span><div class="line"></div></div>
+        <div class="scrap-card fade-up" onclick="showScreen('detail')">
+          <div class="washi" style="--wc:#B0842E; left:auto; right:24px;"></div>
+          <div class="scrap-head"><div class="ring-stamp"></div><div><b>Oat Cortado</b><span>Maren's Café · 4:32pm</span></div></div>
+          <div class="scrap-body-text">"lo-fi playlist, rain finally stopped."</div>
+          <div class="tag-row"><span class="chip">🎧 playlist</span><span class="chip">🐾 with Biscuit</span></div>
+        </div>
+
+        <div class="scrap-card fade-up">
+          <div class="scrap-head"><div class="ring-stamp"></div><div><b>Home Drip, dark roast</b><span>kitchen table · 7:02am</span></div></div>
+          <div class="scrap-body-text">"receipt from the bookstore, tucked in."</div>
+          <div class="tag-row"><span class="chip">🧾 receipt</span><span class="chip">✍️ journaling</span></div>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 5 MEMORY DETAIL -->
+      <section class="screen" id="screen-detail">
+        <div class="back-btn" onclick="showScreen('timeline')">←</div>
+        <div class="detail-hero">
+          <figure class="polaroid"><div class="photo" style="background:linear-gradient(150deg,#c6a379,#6e4526)"></div><figcaption>steam fogging the window</figcaption></figure>
+        </div>
+        <div class="detail-title">
+          <span class="eyebrow">March 12 · 9:14am</span>
+          <h1 class="display" style="font-size:23px;margin-top:4px;">Ethiopia Yirgacheffe</h1>
+        </div>
+        <div class="detail-meta"><span class="chip">☕ pour over</span><span class="chip">🌧️ rainy</span><span class="chip">📖 finished a book</span></div>
+
+        <div class="detail-block">
+          <h4>Journal note</h4>
+          <p class="hand-note">the kind of morning where nothing needs to happen. finished the last page of the book I'd been carrying around for weeks — felt like closing a small door gently.</p>
+        </div>
+
+        <div class="detail-block">
+          <h4>Brew details</h4>
+          <div class="brew-grid">
+            <div class="brew-item"><b>92°C</b><span>water temp</span></div>
+            <div class="brew-item"><b>3:30</b><span>brew time</span></div>
+            <div class="brew-item"><b>V60</b><span>method</span></div>
+            <div class="brew-item"><b>1:16</b><span>ratio</span></div>
+          </div>
+        </div>
+
+        <div class="detail-block">
+          <h4>On the shelf</h4>
+          <div class="playlist-row"><div class="playlist-art"></div><div><b>Norwegian Wood</b><span>Haruki Murakami · finished today</span></div></div>
+        </div>
+
+        <div class="detail-block">
+          <h4>Now playing</h4>
+          <div class="playlist-row"><div class="playlist-art" style="background:linear-gradient(150deg,#707F5C,#33241a)"></div><div><b>slow mornings, vol. 3</b><span>a lo-fi playlist · 42 min</span></div></div>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 6 CREATE MEMORY -->
+      <section class="screen" id="screen-create">
+        <div class="create-header">
+          <div class="back-btn" style="position:static" onclick="showScreen('home')">✕</div>
+          <span class="eyebrow">New page</span>
+          <span style="width:38px"></span>
+        </div>
+        <div class="capture-zone" onclick="this.querySelector('span').textContent='captured ✓'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.4"/></svg>
+          <span>tap to add a photo or polaroid</span>
+        </div>
+        <div class="attach-row">
+          <div class="attach-chip" onclick="showScreen('mood')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>mood</div>
+          <div class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V5a2 2 0 012-2h9l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2z"/></svg>book</div>
+          <div class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="17" r="3"/><path d="M11 17V5l9-2v12"/><circle cx="17" cy="15" r="3"/></svg>playlist</div>
+          <div class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2h9l5 5v13a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M9 13h6M9 17h4"/></svg>receipt</div>
+          <div class="attach-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0112 6a5.5 5.5 0 019.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>quote</div>
+        </div>
+        <div class="field-block">
+          <label>Coffee</label>
+          <input class="field-input" placeholder="what's in the cup?">
+        </div>
+        <div class="field-block">
+          <label>Journal note</label>
+          <input class="field-input" placeholder="write a small memory...">
+        </div>
+        <div class="field-block" style="margin-top:26px;">
+          <button class="btn btn-primary btn-block" onclick="showScreen('detail')">Press into journal</button>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 7 MOOD SELECTION -->
+      <section class="screen" id="screen-mood">
+        <div class="create-header">
+          <div class="back-btn" style="position:static" onclick="showScreen('create')">←</div>
+          <span class="eyebrow">How's this cup feel?</span>
+          <span style="width:38px"></span>
+        </div>
+        <div class="mood-grid">
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">🌧️</span>rainy</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">☀️</span>golden</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">📖</span>reading</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">🎧</span>lo-fi</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">🐾</span>cozy</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">✍️</span>reflective</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">🤍</span>quiet</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">🍂</span>autumn</div>
+          <div class="mood-tile" onclick="pickTile(this)"><span class="em">🕯️</span>evening</div>
+        </div>
+        <div class="field-block" style="margin-top:20px">
+          <button class="btn btn-primary btn-block" onclick="showScreen('create')">Save mood</button>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 8 PROFILE -->
+      <section class="screen" id="screen-profile">
+        <div class="status-row"><span>9:41</span><span></span></div>
+        <div class="profile-head">
+          <div class="profile-photo"><div class="inner"></div></div>
+          <h2 class="display" style="font-size:21px">Wren Castillo</h2>
+          <div class="greet-sub script" style="font-size:16px">journaling since October</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-item"><b>132</b><span>Pages</span></div>
+          <div class="stat-item"><b>19</b><span>Best streak</span></div>
+          <div class="stat-item"><b>8</b><span>Collections</span></div>
+        </div>
+        <div class="sec-title" style="margin-top:6px"><h3 class="display" style="font-size:16px">Shelf badges</h3></div>
+        <div class="shelf-grid">
+          <div class="badge">☕</div><div class="badge">📖</div><div class="badge">🌧️</div><div class="badge">🎧</div>
+          <div class="badge locked">🔒</div><div class="badge locked">🔒</div><div class="badge locked">🔒</div><div class="badge locked">🔒</div>
+        </div>
+        <div class="sec-title"><h3 class="display" style="font-size:16px">Collections</h3></div>
+        <div class="strip-row">
+          <figure class="polaroid mini-polaroid" style="--r:-3deg"><div class="photo" style="background:linear-gradient(150deg,#9C4A2E,#33241a)"></div><figcaption>rainy days</figcaption></figure>
+          <figure class="polaroid mini-polaroid" style="--r:2deg"><div class="photo" style="background:linear-gradient(150deg,#707F5C,#2b3322)"></div><figcaption>café corners</figcaption></figure>
+          <figure class="polaroid mini-polaroid" style="--r:-1deg"><div class="photo" style="background:linear-gradient(150deg,#B0842E,#5a3f14)"></div><figcaption>book pairings</figcaption></figure>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 9 STATISTICS -->
+      <section class="screen" id="screen-stats">
+        <div class="header-simple">
+          <span class="eyebrow">The ledger</span>
+          <h1 class="display" style="font-size:26px">Your statistics</h1>
+        </div>
+        <div class="chart-card">
+          <div class="eyebrow" style="margin-bottom:2px;">This week</div>
+          <h3 class="display" style="font-size:16px;margin-bottom:0;">Cups per day</h3>
+          <div class="bars" id="bars">
+            <div class="bar-col"><div class="bar" style="--h:40%"></div><span>M</span></div>
+            <div class="bar-col"><div class="bar" style="--h:65%"></div><span>T</span></div>
+            <div class="bar-col"><div class="bar" style="--h:30%"></div><span>W</span></div>
+            <div class="bar-col"><div class="bar" style="--h:85%"></div><span>T</span></div>
+            <div class="bar-col"><div class="bar" style="--h:55%"></div><span>F</span></div>
+            <div class="bar-col"><div class="bar" style="--h:100%"></div><span>S</span></div>
+            <div class="bar-col"><div class="bar" style="--h:70%"></div><span>S</span></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3 class="display" style="font-size:16px;margin-bottom:4px;">Favorite origins</h3>
+          <div class="origin-row"><div class="origin-dot" style="background:#9C4A2E"></div><b>Ethiopia</b><span>34%</span></div>
+          <div class="origin-row"><div class="origin-dot" style="background:#B0842E"></div><b>Colombia</b><span>27%</span></div>
+          <div class="origin-row"><div class="origin-dot" style="background:#707F5C"></div><b>Guatemala</b><span>19%</span></div>
+          <div class="origin-row"><div class="origin-dot" style="background:#C6A379"></div><b>Home blend</b><span>20%</span></div>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+      <!-- 10 SETTINGS -->
+      <section class="screen" id="screen-settings">
+        <div class="header-simple">
+          <span class="eyebrow">The desk</span>
+          <h1 class="display" style="font-size:26px">Settings</h1>
+        </div>
+        <div class="settings-group">
+          <h4>Appearance</h4>
+          <div class="settings-row">Night café mode<div class="toggle" id="theme-toggle" onclick="toggleTheme()"></div></div>
+          <div class="settings-row">Paper grain<div class="toggle on"></div></div>
+        </div>
+        <div class="settings-group">
+          <h4>Journal</h4>
+          <div class="settings-row">Daily reminder<div class="toggle on"></div></div>
+          <div class="settings-row">Include location<div class="toggle"></div></div>
+          <div class="settings-row">Export as PDF<span style="color:var(--ink-soft)">›</span></div>
+        </div>
+        <div class="settings-group">
+          <h4>About</h4>
+          <div class="settings-row">Version<span style="color:var(--ink-soft)">1.0.0</span></div>
+        </div>
+        <div class="pad-bottom"></div>
+      </section>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="tabbar" id="tabbar">
+      <button class="tab active" data-target="home" onclick="showScreen('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home
+      </button>
+      <button class="tab" data-target="timeline" onclick="showScreen('timeline')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/></svg>Timeline
+      </button>
+      <button class="tab tab-create" data-target="create" onclick="showScreen('create')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="tab" data-target="stats" onclick="showScreen('stats')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>Stats
+      </button>
+      <button class="tab" data-target="profile" onclick="showScreen('profile')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Profile
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const order = ['splash','onboard','home','timeline','detail','create','mood','profile','stats','settings'];
+let current = 'splash';
+
+function showScreen(name){
+  if(name === current) return;
+  const ripple = document.getElementById('ripple');
+  ripple.classList.add('firing');
+  const outgoing = document.getElementById('screen-'+current);
+  const incoming = document.getElementById('screen-'+name);
+
+  setTimeout(()=>{
+    outgoing.classList.remove('active');
+    incoming.classList.add('active');
+    incoming.scrollTop = 0;
+    current = name;
+    updateTabbar(name);
+    animateIn(incoming);
+    if(name === 'stats') animateBars();
+  }, 260);
+
+  setTimeout(()=>{ ripple.classList.remove('firing'); }, 620);
+}
+
+function updateTabbar(name){
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.target === name);
+  });
+  const tabbar = document.getElementById('tabbar');
+  const hideOn = ['splash','onboard','detail','mood'];
+  tabbar.style.display = hideOn.includes(name) ? 'none' : 'flex';
+}
+
+function animateIn(scr){
+  const items = scr.querySelectorAll('.fade-up');
+  items.forEach((el,i)=>{
+    el.classList.remove('in');
+    void el.offsetWidth;
+    setTimeout(()=> el.classList.add('in'), 60*i);
+  });
+}
+
+function animateBars(){
+  document.querySelectorAll('#bars .bar').forEach(b=>{
+    b.style.transform = 'scaleY(0)';
+    void b.offsetWidth;
+    b.style.transform = 'scaleY('+ (b.style.getPropertyValue('--h')) +')';
+  });
+}
+
+function pickMood(btn){
+  document.querySelectorAll('#home-moods .mood-btn').forEach(b=>b.classList.remove('picked'));
+  btn.classList.add('picked');
+}
+function pickTile(el){
+  document.querySelectorAll('.mood-tile').forEach(t=>t.classList.remove('picked'));
+  el.classList.add('picked');
+}
+
+function toggleTheme(){
+  document.body.classList.toggle('night');
+  document.getElementById('theme-toggle').classList.toggle('on');
+}
+
+// onboarding
+const obCopy = [
+  {h:"A journal, not a log", p:"SipScapes isn't for tracking caffeine. It's for keeping the small, quiet moments that happen around a cup."},
+  {h:"Every detail, in its place", p:"Tuck in a polaroid, a receipt, a line from your book, or the song that was playing. Nothing is too small to keep."},
+  {h:"Your shelf, growing slowly", p:"Watch your timeline fill like a well-loved journal — one honest page at a time."}
+];
+let obIndex = 0;
+function renderOb(){
+  document.querySelectorAll('.ob-slide').forEach(s=> s.classList.toggle('active', +s.dataset.i === obIndex));
+  document.querySelectorAll('.ob-dots span').forEach((d,i)=> d.classList.toggle('active', i===obIndex));
+  document.getElementById('ob-h').textContent = obCopy[obIndex].h;
+  document.getElementById('ob-p').textContent = obCopy[obIndex].p;
+}
+function nextOnboard(){
+  if(obIndex < 2){ obIndex++; renderOb(); }
+  else { showScreen('home'); }
+}
+function skipOnboard(){ showScreen('home'); }
+
+// boot sequence
+updateTabbar('splash');
+setTimeout(()=> showScreen('onboard'), 2200);
+</script>
+</body>
+</html>
